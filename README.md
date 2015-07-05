@@ -1,2 +1,2 @@
 # carpet
-declarative UI for Nod.
+Web and mobile interface for a remmitance application.

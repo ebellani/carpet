@@ -10,3 +10,6 @@ pom.xml.asc
 .lein-plugins/
 .lein-failures
 .nrepl-port
+.lein-env
+resources/public/js/out/
+resources/public/js/app.js
