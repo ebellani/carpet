@@ -3,23 +3,69 @@
   communication between client <-> server."
   (:require
    [ring.middleware.defaults]
-   [clojure.string     :as str]
-   [compojure.core     :as comp :refer [POST GET defroutes]]
-   [compojure.route    :as route]
-   [hiccup.core        :as hiccup]
-   [clojure.core.async :as async :refer (<! <!! >! >!! put! chan go go-loop)]
-   [taoensso.timbre    :as timbre :refer (tracef debugf infof warnf errorf)]
-   [taoensso.sente     :as sente]
-   [org.httpkit.server :as http-kit]
-   [carpet.router     :as router :refer (event-msg-handler)]
-   [carpet.communication    :as comm]
-   [carpet.views      :as views]))
+   [clojure.string                  :as str]
+   [compojure.core                  :as comp :refer [POST GET defroutes]]
+   [compojure.route                 :as route]
+   [hiccup.core                     :as hiccup]
+   [clojure.core.async              :as async :refer [<! <!! >! >!! put! chan go go-loop]]
+   [taoensso.timbre                 :as timbre :refer [tracef debugf infof warnf errorf]]
+   [taoensso.timbre.appenders.core  :as appenders]
+   [taoensso.sente                  :as sente]
+   [org.httpkit.server              :as http-kit]
+   [clojure.java.io                 :as io]
+   [net.cgrand.enlive-html          :as html :refer [deftemplate]]
+   [net.cgrand.reload :refer [auto-reload]]
+   [carpet.router                   :as router :refer [event-msg-handler]]
+   [carpet.communication            :as comm]
+   [environ.core                    :refer [env]]
+   [carpet.dev                      :as dev]))
 
-;; Logging config
+;;;; Logging config
 
-;; (sente/set-logging-level! :trace) ; Uncomment for more logging
+;; (:require [taoensso.timbre.appenders.core :as appenders]) ; Add to ns
 
-;; ---> Choose (uncomment) a supported web server and adapter <---
+;; move logging config to its own ns and use environments to config
+;; it.
+(timbre/merge-config!
+  {:appenders {:spit (appenders/spit-appender {:fname "log/server.log"})}})
+
+;;;; components
+
+(defmacro define-component-root [component-definition-symbol component-name]
+  "A component root is a page with a element with an id equal to the
+  router/root-element-id. This serves as a dispatch point to the
+  view."
+  `(deftemplate ~component-definition-symbol (io/resource "index.html") []
+     [:body] (if dev/is-dev? dev/inject-devmode-html identity)
+     [(keyword ~router/root-element-selector)]
+     (comp (html/add-class ~component-name)
+           (html/remove-attr :class))))
+
+(define-component-root login-component-root router/login-component-name)
+
+(defroutes my-routes
+  (GET comm/login-path req (login-component-root))
+  ;;
+  (GET comm/communication-path req
+    (comm/ring-ajax-get-or-ws-handshake req))
+  (POST comm/communication-path req
+    (comm/ring-ajax-post req))
+  ;;
+  (route/resources "/") ; Static files, notably the cljs targets
+  (route/not-found "not found"))
+
+(def my-ring-handler
+  "Adds an acessor that takes into consideration the custom csrf toke name."
+  (let [ring-defaults-config
+        (assoc-in ring.middleware.defaults/site-defaults
+                  [:security :anti-forgery]
+                  {:read-token (fn [req]
+                                 (-> req :params comm/csrf-token-name))})]
+    ;; NB: Sente requires the Ring `wrap-params` + `wrap-keyword-params`
+    ;; middleware to work. These are included with
+    ;; `ring.middleware.defaults/wrap-defaults`
+    (ring.middleware.defaults/wrap-defaults my-routes
+                                            ring-defaults-config)))
 
 ;;; http-kit
 (defn start-web-server!* [ring-handler port]
@@ -29,29 +75,8 @@
      :port    (:local-port (meta http-kit-stop-fn))
      :stop-fn (fn [] (http-kit-stop-fn :timeout 100))}))
 
-(defroutes my-routes
-  (GET  "/"      req (views/landing-pg-handler req))
-  ;;
-  (GET  comm/communication-url  req (comm/ring-ajax-get-or-ws-handshake req))
-  (POST comm/communication-url  req (comm/ring-ajax-post                req))
-  (POST "/login" req (views/login! req))
-  ;;
-  (route/resources "/") ; Static files, notably public/main.js (our cljs target)
-  (route/not-found "<h1>Page not found</h1>"))
+;;;; Server-side channel-connected methods
 
-(def my-ring-handler
-  (let [ring-defaults-config
-        (assoc-in ring.middleware.defaults/site-defaults [:security :anti-forgery]
-                  {:read-token (fn [req] (-> req :params :csrf-token))})]
-    ;; NB: Sente requires the Ring `wrap-params` + `wrap-keyword-params`
-    ;; middleware to work. These are included with
-    ;; `ring.middleware.defaults/wrap-defaults` - but you'll need to ensure
-    ;; that they're included yourself if you're not using `wrap-defaults`.
-    ;;
-    (ring.middleware.defaults/wrap-defaults my-routes
-                                            ring-defaults-config)))
-
-;; Server-side methods
 (defmethod event-msg-handler :default ; Fallback
   [{:as ev-msg :keys [event id ?data ring-req ?reply-fn send-fn]}]
   (let [session (:session ring-req)
@@ -65,16 +90,6 @@
   (if (= ?data {:first-open? true})
     (debugf "Channel socket successfully established!")
     (debugf "Channel socket state change: %s" ?data)))
-
-(defmethod event-msg-handler comm/button1
-  [{:as ev-msg :keys [event id ?data ring-req ?reply-fn send-fn]}]
-  (debugf "%s event: %s" comm/button1 event))
-
-(defmethod event-msg-handler comm/button2
-  [{:as ev-msg :keys [event id ?data ring-req ?reply-fn send-fn]}]
-  (debugf "HELLO: %s" event)
-  (when ?reply-fn
-    (?reply-fn "XXXXXXXXXXX")))
 
 ;; Add your (defmethod event-msg-handler <event-id> [ev-msg] <body>)s here...
 
@@ -111,8 +126,7 @@
   (stop-web-server!)
   (let [{:keys [stop-fn port] :as server-map}
         (start-web-server!* (var my-ring-handler)
-                            (or port 0) ; 0 => auto (any available) port
-                            )
+                            (or port (:port env) 10555))
         uri (format "http://localhost:%s/" port)]
     (debugf "Web server is running at `%s`" uri)
     (reset! web-server_ server-map)))
@@ -120,3 +134,15 @@
 (defn start! []
   (router/start! #((start-web-server!)
                    (start-broadcaster!))))
+
+(defn run-auto-reload []
+  (auto-reload *ns*)
+  (dev/start-figwheel))
+
+(defn run [& [port]]
+  (when dev/is-dev?
+    (run-auto-reload))
+  (start-web-server! port))
+
+(defn -main [& [port]]
+  (run port))

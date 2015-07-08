@@ -15,9 +15,20 @@
 (def ^:private packer
   (sente-transit/get-flexi-packer :edn)) ;; Experimental, needs Transit dep
 
-(def communication-url
-  "Used both by the server as a URL to create the communication channel in."
+(def communication-path
+  "Path for the communication channel between users<->server."
   "/chsk")
+
+(def csrf-token-name
+  "Used to create and retrieve the CSRF [1] token.
+[1] https://en.wikipedia.org/wiki/Cross-site_request_forgery"
+  :csrf-token)
+
+(def login-path
+  "The path where the login functionality will take place. Both POST and GET are
+  made on this path, one for retrieving the page for login and the other for
+  posting the credentials."
+  "/login")
 
 (let [{:keys [ch-recv
               send-fn
@@ -30,7 +41,7 @@
       ;; todo
       #?(:clj (sente/make-channel-socket! sente-web-server-adapter
                                           {:packer packer}))
-      #?(:cljs (sente/make-channel-socket! communication-url
+      #?(:cljs (sente/make-channel-socket! communication-path
                                            {:type   :auto
                                             :packer packer}))]
   (def ch-chsk ch-recv)    ; ChannelSocket's receive channel

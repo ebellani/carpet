@@ -1,5 +1,6 @@
 (ns carpet.router
-  "This is the common parts of routing and handling the channel's messages."
+  "This is the common parts of routing and handling the channel's messages and
+  the different app view components."
   (:require [taoensso.sente :as sente]
             #?(:clj
                [taoensso.timbre :refer (debugf)]
@@ -7,19 +8,32 @@
                [taoensso.encore :refer (debugf)])
             [carpet.communication :as comm]))
 
+;;;; component roots
+
+;;; see the documentation of carpet.server/define-component to
+;;; understand what is a component root and why one is needed.
+
+(def root-element-selector
+  "CSS selector for the root element."
+  "#app")
+
+(def login-component-name "login")
+
 ;;;; Routing handlers
 
-;; So you'll want to define one server-side and one client-side
-;; (fn event-msg-handler [ev-msg]) to correctly handle incoming events. How you
-;; actually do this is entirely up to you. In this example we use a multimethod
-;; that dispatches to a method based on the `event-msg`'s event-id. Some
-;; alternatives include a simple `case`/`cond`/`condp` against event-ids, or
-;; `core.match` against events.
+;;; So you'll want to define one server-side and one client-side (fn
+;;; event-msg-handler [ev-msg]) to correctly handle incoming
+;;; events. How you actually do this is entirely up to you. In this
+;;; example we use a multimethod that dispatches to a method based on
+;;; the `event-msg`'s event-id. Some alternatives include a simple
+;;; `case`/`cond`/`condp` against event-ids, or `core.match` against
+;;; events.
 
 (defmulti event-msg-handler :id) ; Dispatch on event-id
 
-;; Wrap for logging, catching, etc.:
 (defn event-msg-handler* [{:as ev-msg :keys [id ?data event]}]
+  "Wrapper of the event-msg-handler, emulating something like CLOS :around method combination[1].
+[1] http://www.aiai.ed.ac.uk/~jeff/clos-guide.html#meth-comb"
   (debugf "Event: %s" event)
   (event-msg-handler ev-msg))
 
