@@ -8,17 +8,6 @@
                [taoensso.encore :refer (debugf)])
             [carpet.communication :as comm]))
 
-;;;; component roots
-
-;;; see the documentation of carpet.server/define-component to
-;;; understand what is a component root and why one is needed.
-
-(def root-element-selector
-  "CSS selector for the root element."
-  "#app")
-
-(def login-component-name "login")
-
 ;;;; Routing handlers
 
 ;;; So you'll want to define one server-side and one client-side (fn
@@ -31,7 +20,7 @@
 
 (defmulti event-msg-handler :id) ; Dispatch on event-id
 
-(defn event-msg-handler* [{:as ev-msg :keys [id ?data event]}]
+(defn event-msg-handler-wrapper [{:as ev-msg :keys [id ?data event]}]
   "Wrapper of the event-msg-handler, emulating something like CLOS :around method combination[1].
 [1] http://www.aiai.ed.ac.uk/~jeff/clos-guide.html#meth-comb"
   (debugf "Event: %s" event)
@@ -59,13 +48,10 @@
 (defn stop-router! []
   (when-let [stop-f @router_] (stop-f)))
 
-(defn start-router! []
-  (stop-router!)
-  (reset! router_ (sente/start-chsk-router! comm/ch-chsk
-                                            event-msg-handler*)))
-
 (defn start!
-  ([] (start! #()))
-  ([custom-start!]
-   (start-router!)
-   (custom-start!)))
+  "Installs a wrapper over the event-msg-handler"
+  []
+  (stop-router!)
+  (reset! router_
+          (sente/start-chsk-router! comm/ch-chsk
+                                    event-msg-handler-wrapper)))
