@@ -21,13 +21,11 @@
 
 (def csrf-token-name
   "Used to create and retrieve the CSRF [1] token.
-[1] https://en.wikipedia.org/wiki/Cross-site_request_forgery"
+  [1] https://en.wikipedia.org/wiki/Cross-site_request_forgery"
   :csrf-token)
 
 (def login-path
-  "The path where the login functionality will take place. Both POST and GET are
-  made on this path, one for retrieving the page for login and the other for
-  posting the credentials."
+  "The path where the login functionality will take place."
   "/login")
 
 (let [{:keys [ch-recv
@@ -54,25 +52,10 @@
       [(def chsk-state state)   ; Watchable, read-only atom
        (def chsk chsk)]))
 
-;;; communication contract
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; communication contract ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;; Shared contract that the server and its user/clients will use to
-;;; interact with each other. This is used in order to avoid typos and
-;;; to catch at compile time errors in building the communication
-;;; messages.
-
-(def currency-rate
-  "Used to figure out the rate of a given currency. A payload for this message
-  will use currency symbols below in order to communicate the rate as a map."
-  :currency-rate)
-
-;;; The currency symbols below are
-(def bitcoin
-  "Symbol for representing bitcoin "
-  :bitcoin)
-
-(def currency-rate
-  "Used to figure out the rate of a given currency."
-  :currency-rate)
-
-;;; end communication contract
+;; contract that the server and its user/clients will use to interact
+;; with each other. This is used in order to avoid typos and to catch
+;; at compile time errors in building the communication messages.

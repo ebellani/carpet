@@ -2,54 +2,60 @@
   "Client side of the app. Dispatches to the correct om component based on the
   current component root name."
   (:require-macros
-   [cljs.core.async.macros  :as asyncm :refer (go go-loop)])
+   [cljs.core.async.macros  :as asyncm :refer [go-loop]])
   (:require
-   [om.core                 :as om :include-macros true]
+   [reagent.core            :as reagent]
    [clojure.string          :as str]
-   [cljs.core.async         :as async   :refer (<! >! put! chan)]
-   [taoensso.encore         :as enc     :refer (tracef debugf infof warnf errorf)]
-   [taoensso.sente          :as sente   :refer (cb-success?)]
-   [carpet.router           :as router  :refer (event-msg-handler start!)]
+   [cljs.core.async         :as async   :refer [timeout]]
+   [taoensso.encore         :as log]
+   [taoensso.sente          :as sente   :refer [cb-success?]]
+   [carpet.router           :as router  :refer [event-msg-handler]]
    [carpet.communication    :as comm]
-   [carpet.login            :as login]))
+   [carpet.login            :as login]
+   [carpet.notification     :as notification]))
 
-;;;; Client-side setup
+(log/debugf "ClojureScript appears to have loaded correctly.")
 
-(debugf "ClojureScript appears to have loaded correctly.")
-
-(defonce app-state (atom {}))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; basic sente client side events ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmethod event-msg-handler :chsk/state
+  ;; Indicates when Sente is ready client-side.
   [{:as ev-msg :keys [?data]}]
   (if (= ?data {:first-open? true})
-    (debugf "Channel socket successfully established!")
-    (debugf "Channel socket state change: %s" ?data)))
+    (log/debugf "Channel socket successfully established!")
+    (log/debugf "Channel socket state change: %s" ?data)))
 
 (defmethod event-msg-handler :chsk/recv
+  ;; default custom push event
   [{:as ev-msg :keys [?data]}]
-  (debugf "Push event from server: %s" ?data))
+  (log/debugf "Push event from server: %s" ?data))
 
 (defmethod event-msg-handler :chsk/handshake
+  ;; handshake for WS
   [{:as ev-msg :keys [?data]}]
   (let [[?uid ?csrf-token ?handshake-data] ?data]
-    (debugf "Handshake: %s" ?data)))
+    (log/debugf "Handshake: %s" ?data)))
 
-;; Add your (defmethod handle-event-msg! <event-id> [ev-msg] <body>)s here...
+;;;;;;;;;;;;;;;;;;;;
+;; custom events  ;;
+;;;;;;;;;;;;;;;;;;;;
 
-;;;; Client-side UI
+;; none yet
+
+;;;;;;;;;;;;;
+;; Root UI ;;
+;;;;;;;;;;;;;
+
+(defn- application
+  "Renders a view based on the current session state."
+  []
+  [:div
+   [notification/panel]
+   [login/form]])
 
 (defn main []
-  "Dispatches based on the component root. See carpet.router for a
-  documentation of the component root concept."
-  (let [component-el
-        (aget (. js/document (querySelectorAll router/root-element-selector)) 0)
-        component-root-name (. component-el -className)]
-    (om/root
-     ;; dispatch to the application function
-     (condp = component-root-name
-       router/login-component-name login/maker
-       ;; default
-       (do (js/console.error "Unknown component: " component-root-name)
-           login/maker))
-     app-state
-     {:target component-el})))
+  (router/start!)
+  (reagent/render-component [application]
+                            (. js/document (getElementById "app"))))

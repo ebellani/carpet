@@ -32,14 +32,27 @@
    [com.cognitect/transit-cljs "0.8.199"]
    ;; types are used mainly to enforce the communication protocol
    ;; between client<->server
-   [org.clojure/core.typed "0.3.0"]
+   [org.clojure/core.typed "0.3.4"]
+   ;; auth
+   [buddy/buddy-hashers "0.4.2"]
+   [buddy/buddy-auth "0.5.3"]
+   [crypto-random "1.2.0"]
    ;; controls environment-based variables, such as database
    ;; connections.
    [environ "1.0.0"]
    ;; templating system, enabling the usage of plain HTML files.
    [enlive "1.1.5"]
-   [sablono "0.3.4"]
-   [org.omcljs/om "0.8.8"]]
+   ;; UI building
+   [reagent "0.5.0"]
+   ;; attaching a unique key to every item in a dynamically
+   ;; generated list of components is good practice, and helps React
+   ;; to improve performance for large lists. The key can be given
+   ;; either (as in this example) as meta-data, or as a :key item in
+   ;; the first argument to a component (if it is a map). See
+   ;; React’s documentation [2] for more info.[1]
+   ;; [1] https://holmsand.github.io/reagent/index.html
+   ;; [2] http://facebook.github.io/react/docs/multiple-components.html#dynamic-children
+   [com.lucasbradstreet/cljs-uuid-utils "1.0.2"]]
   :plugins [[lein-cljsbuild "1.0.3"]
             [lein-environ "1.0.0"]]
   :source-paths ["src/clj" "src/cljc"]
@@ -96,7 +109,9 @@
     :figwheel {:http-server-root "public"
                :server-port 3449
                :css-dirs ["resources/public/css"]}
-    :env {:is-dev true}
+    :env {:is-dev true
+          ;; used in generating the tokens
+          :secret "mysupersecret"}
     ;; TODO: cljs test env. Adapt the chestnut example to casper and midje
     :cljsbuild {:builds {:app {:source-paths ["env/dev/cljs"
                                               "env/dev/cljc"]}}}}
