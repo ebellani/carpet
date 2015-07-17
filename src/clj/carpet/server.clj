@@ -19,8 +19,8 @@
    [carpet.router                   :as router :refer [event-msg-handler]]
    [carpet.communication            :as comm]
    [carpet.auth                     :as auth]
-   [carpet.dev                      :as dev]
-   [carpet.request                  :as req]))
+   [carpet.request                  :as req]
+   [carpet.dev                      :as dev]))
 
 ;;;;;;;;;;;
 ;; utils ;;

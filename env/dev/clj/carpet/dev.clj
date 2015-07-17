@@ -27,21 +27,14 @@
   "The whole point of this is to start the figwheel server in the same process
   that the regular development takes place."
   []
-  (let [server (fig/start-server { :css-dirs ["resources/public/css"] })
-        config {:builds [{:id "dev"
-                          :source-paths ["env/dev/cljs"
-                                         "env/dev/cljc"
-                                         "src/cljs"
-                                         "src/cljc"]
-                          ;; copied from project.clj
-                          :compiler
-                          {:output-to     "resources/public/js/app.js"
-                           :output-dir    "resources/public/js/out"
-                           :main          "carpet.main"
-                           :asset-path    "js/out"
-                           :source-map-timestamp true
-                           :optimizations :none
-                           :source-map    true
-                           :pretty-print  true}}]
-                :figwheel-server server}]
+  (let [server (fig/start-server {:css-dirs (-> env :hot-loading :css-dirs)})
+        config
+        {:builds [{:id "dev"
+                   :source-paths (-> env
+                                     :hot-loading
+                                     :source-paths)
+                   :compiler     (-> env
+                                     :hot-loading
+                                     :cljsbuild-compiler-config)}]
+         :figwheel-server server}]
     (fig-auto/autobuild* config)))
