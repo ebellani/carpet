@@ -1,6 +1,8 @@
 (ns carpet.session
-  "The login process is "
-  (:require [reagent.core          :refer [atom]]
+  "Module that holds the actual storage variable for the session token, and the
+  process to create/destroy it."
+  (:require [taoensso.sente        :as sente]
+            [reagent.core          :refer [atom]]
             [carpet.communication  :as comm]
             [taoensso.sente        :as sente]
             [taoensso.encore       :as log]
@@ -11,7 +13,7 @@
 ;; state variable ;;
 ;;;;;;;;;;;;;;;;;;;;
 
-(defonce token
+(defonce ^:private token
   ;; JWS token for maintaining session state without server side
   ;; storage.
   (atom false))
@@ -20,10 +22,15 @@
 ;; operators ;;
 ;;;;;;;;;;;;;;;
 
-(defn create!
+(defn alive? []
+  (not (false? @token)))
+
+(defn try-login!
   "Attemps to create a new session by storing the token that the server sends in
   case of valid authentication. Based on option 1 of
-  https://github.com/ptaoussanis/sente/issues/62#issuecomment-58790741"
+  https://github.com/ptaoussanis/sente/issues/62#issuecomment-58790741. This
+  also asks the channel socket to reconnect on success, thereby picking up the
+  new session."
   [user-name password]
   (log/debugf "Sending auth data for user: %s" user-name)
   (sente/ajax-call
@@ -31,18 +38,21 @@
    {:method :post
     :params {:user-name user-name
              :password  password
-             :csrf-token (:csrf-token @comm/chsk-state)}}
+             :csrf-token (:csrf-token @comm/status)}}
    (fn [resp-map]
      (let [{:keys [success? ?status ?error ?content ?content-type]}
            resp-map]
        (log/debugf "resp-map %s" resp-map)
-       (if success?
-         (do
-           (reset! token "the new token")
-           (swap! noty/notifications
-                  #(conj % (noty/make-notification "success"
-                                                   "Login successful."))))
-         (do (reset! token false)
-             (swap! noty/notifications
-                    #(conj % (noty/make-notification "danger"
-                                                     "Login failed.")))))))))
+       (reset! token (if success?
+                       (do
+                         (sente/chsk-reconnect! comm/connection)
+                         (:token ?content))
+                       false))
+       (noty/add! (if success? "success" "danger")
+                  (:message ?content))))))
+
+(defn logout!
+  "Actually communicates user termination to the server."
+  []
+  ;; TODO...
+  (reset! token false))

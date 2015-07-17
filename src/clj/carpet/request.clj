@@ -1,29 +1,41 @@
 (ns carpet.request
-  "Semantic response wrappers for the server."
+  "Semantic EDN response wrappers for the server."
   (:require [clojure.core.typed :as t :refer
-             [ann defalias HMap IFn]]))
+             [ann defalias HMap IFn Map AnyInteger]]))
 
 ;;;;;;;;;;;
 ;; types ;;
 ;;;;;;;;;;;
 
-(defalias StatusBody (HMap :mandatory {:message String}
-                           :complete? false))
+(defalias Headers (Map String String))
 (defalias Status (HMap :mandatory
-                       {:status AnyInteger
-                        :body   StatusBody}))
+                       {:status  AnyInteger
+                        :headers Headers
+                        :body    String}))
+
 (defalias StatusMaker (IFn [-> Status]
-                           [StatusBody -> Status]))
+                           [Any -> Status]))
 ;;;;;;;;;;;;;;;;;;;;;
 ;; instantiators   ;;
 ;;;;;;;;;;;;;;;;;;;;;
 
+(ann default-headers Headers)
+(def default-headers {"Content-Type" "application/edn"})
+
+(ann make [AnyInteger Headers Any -> Status])
+(defn- make [code headers body]
+  {:status  code
+   :headers default-headers
+   :body    (pr-str body)})
+
 (ann ok StatusMaker)
 (defn ok
   ([] (ok {:message "Request successful"}))
-  ([d] {:status 200 :body d}))
+  ([body]
+   (make 200 default-headers body)))
 
 (ann denied StatusMaker)
 (defn denied
   ([] (denied {:message "Access denied"}))
-  ([d] {:status 400 :body d}))
+  ([body]
+   (make 400 default-headers body)))
