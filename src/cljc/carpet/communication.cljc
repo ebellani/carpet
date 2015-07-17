@@ -12,8 +12,8 @@
             #?(:clj [taoensso.sente.server-adapters.http-kit
                      :refer (sente-web-server-adapter)])))
 
-(def ^:private packer
-  (sente-transit/get-flexi-packer :edn)) ;; Experimental, needs Transit dep
+(def ^:private packer-payload
+  {:packer (sente-transit/get-flexi-packer :edn)})
 
 (def communication-path
   "Path for the communication channel between users<->server."
@@ -38,10 +38,10 @@
                          state])]}
       ;; todo
       #?(:clj (sente/make-channel-socket! sente-web-server-adapter
-                                          {:packer packer}))
+                                          packer-payload))
       #?(:cljs (sente/make-channel-socket! communication-path
-                                           {:type   :auto
-                                            :packer packer}))]
+                                           (merge packer-payload
+                                                  {:type :auto})))]
   (def ch-chsk ch-recv)    ; ChannelSocket's receive channel
   (def chsk-send! send-fn) ; ChannelSocket's send API fn
   #?@(:clj
