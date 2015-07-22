@@ -12,7 +12,7 @@
 
 ;; TODO: add assertion for types
 ;; #{"success" "info" "warning" "danger"}
-(defn make-notification
+(defn- make-notification
   [type message]
   {:id      (make-random-uuid) ;; artificial ID to create a key
    :type    type
@@ -36,6 +36,9 @@
                     (not= existing-notification notification))
                   %)))
 
+(defn add! [type message]
+  (swap! notifications #(conj % (make-notification type message))))
+
 ;;;;;;;;;;;;;;;;
 ;; components ;;
 ;;;;;;;;;;;;;;;;
@@ -52,9 +55,8 @@
       "×"]
      message]))
 
-(defn panel
+(defn main
   []
-  (let [])
   [:div {:class "notifications-panel"}
    (for [notification (take max-notifications @notifications)]
      ^{:key (:id notification)} [dismissible-alert notification])])

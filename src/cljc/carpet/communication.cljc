@@ -8,6 +8,11 @@
   All this is required because the communication is an aspect of the whole
   application."
   (:require [taoensso.sente :as sente]
+            [#?(:clj
+                taoensso.timbre
+                :cljs
+                taoensso.encore)
+             :as log]
             [taoensso.sente.packers.transit :as sente-transit]
             #?(:clj [taoensso.sente.server-adapters.http-kit
                      :refer (sente-web-server-adapter)])))
@@ -28,29 +33,37 @@
   "The path where the login functionality will take place."
   "/login")
 
+;;;;;;;;;;;;;;;;;;;;;;;;
+;; channel socket API ;;
+;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Builds and defines symbols for the server<->user communication channels.
 (let [{:keys [ch-recv
               send-fn
               #?@(:clj
                   [ajax-post-fn
                    ajax-get-or-ws-handshake-fn
                    connected-uids]
-                  :cljs [chsk
-                         state])]}
-      ;; todo
-      #?(:clj (sente/make-channel-socket! sente-web-server-adapter
-                                          packer-payload))
-      #?(:cljs (sente/make-channel-socket! communication-path
-                                           (merge packer-payload
-                                                  {:type :auto})))]
-  (def ch-chsk ch-recv)    ; ChannelSocket's receive channel
-  (def chsk-send! send-fn) ; ChannelSocket's send API fn
+                  :cljs
+                  [chsk
+                   state])]}
+      #?(:clj
+         (sente/make-channel-socket! sente-web-server-adapter
+                                     packer-payload)
+         :cljs
+         (sente/make-channel-socket! communication-path
+                                     (merge packer-payload
+                                            {:type :auto})))]
+  ;; common API for both languages
+  (defonce receiver  ch-recv)
+  (defonce sender!   send-fn)
   #?@(:clj
-      [(def connected-uids                connected-uids) ; Watchable, read-only atom
-       (def ring-ajax-post                ajax-post-fn)
-       (def ring-ajax-get-or-ws-handshake ajax-get-or-ws-handshake-fn)]
+      [(defonce connected-uids connected-uids)
+       (defonce ring-ajax-post ajax-post-fn)
+       (defonce ring-ajax-get-or-ws-handshake ajax-get-or-ws-handshake-fn)]
       :cljs
-      [(def chsk-state state)   ; Watchable, read-only atom
-       (def chsk chsk)]))
+      [(defonce status  state)
+       (defonce connection chsk)]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; communication contract ;;

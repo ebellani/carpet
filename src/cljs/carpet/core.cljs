@@ -12,7 +12,9 @@
    [carpet.router           :as router  :refer [event-msg-handler]]
    [carpet.communication    :as comm]
    [carpet.login            :as login]
-   [carpet.notification     :as notification]))
+   [carpet.dashboard        :as dashboard]
+   [carpet.notification     :as notification]
+   [carpet.session          :as session]))
 
 (log/debugf "ClojureScript appears to have loaded correctly.")
 
@@ -30,19 +32,17 @@
 (defmethod event-msg-handler :chsk/recv
   ;; default custom push event
   [{:as ev-msg :keys [?data]}]
-  (log/debugf "Push event from server: %s" ?data))
+  (let [[message-type message-payload] ?data]
+    ;; unpacks the message in order to use the same format for
+    ;; everything
+    (event-msg-handler {:id  message-type
+                        :?data message-payload})))
 
 (defmethod event-msg-handler :chsk/handshake
   ;; handshake for WS
   [{:as ev-msg :keys [?data]}]
   (let [[?uid ?csrf-token ?handshake-data] ?data]
     (log/debugf "Handshake: %s" ?data)))
-
-;;;;;;;;;;;;;;;;;;;;
-;; custom events  ;;
-;;;;;;;;;;;;;;;;;;;;
-
-;; none yet
 
 ;;;;;;;;;;;;;
 ;; Root UI ;;
@@ -52,8 +52,10 @@
   "Renders a view based on the current session state."
   []
   [:div
-   [notification/panel]
-   [login/form]])
+   [notification/main]
+   (if (session/alive?)
+     [dashboard/main]
+     [login/main])])
 
 (defn main []
   (router/start!)

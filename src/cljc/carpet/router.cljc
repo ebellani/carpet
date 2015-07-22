@@ -8,15 +8,9 @@
                [taoensso.encore :refer (debugf)])
             [carpet.communication :as comm]))
 
-;;;; Routing handlers
-
-;;; So you'll want to define one server-side and one client-side (fn
-;;; event-msg-handler [ev-msg]) to correctly handle incoming
-;;; events. How you actually do this is entirely up to you. In this
-;;; example we use a multimethod that dispatches to a method based on
-;;; the `event-msg`'s event-id. Some alternatives include a simple
-;;; `case`/`cond`/`condp` against event-ids, or `core.match` against
-;;; events.
+;;;;;;;;;;;;;;;;;;;;;;;;
+;; root msg handlers  ;;
+;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmulti event-msg-handler :id) ; Dispatch on event-id
 
@@ -31,19 +25,18 @@
       [[{:as ev-msg :keys [event id ?data ring-req ?reply-fn send-fn]}]
        (let [session (:session ring-req)
              uid     (:uid     session)]
-         (debugf "Unhandled event: %s" event)
+         (debugf "Unhandled event in server: %s with session %s" event session)
          (when ?reply-fn
            (?reply-fn {:umatched-event-as-echoed-from-from-server event})))]
       :cljs
       [[{:as ev-msg :keys [event]}]
        (debugf "Unhandled event: %s" event)]))
 
-;;;; Init
+;;;;;;;;;;;;;;;
+;; interface ;;
+;;;;;;;;;;;;;;;
 
-#?(:clj
-   (defonce router_ (atom nil))
-   :cljs
-   (def router_ (atom nil)))
+(defonce router_ (atom nil))
 
 (defn stop-router! []
   (when-let [stop-f @router_] (stop-f)))
@@ -53,5 +46,5 @@
   []
   (stop-router!)
   (reset! router_
-          (sente/start-chsk-router! comm/ch-chsk
+          (sente/start-chsk-router! comm/receiver
                                     event-msg-handler-wrapper)))

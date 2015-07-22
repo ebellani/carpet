@@ -24,11 +24,12 @@
 
 (def server-deps
   "Regular HTTP/WS server related deps."
-  '[[http-kit                  "2.1.19"]
-    [ring                      "1.3.2"]
-    [ring/ring-defaults        "0.1.3"] ; Includes `ring-anti-forgery`
-    [compojure                 "1.3.4"]
-    [enlive "1.1.5"]])
+  '[[http-kit           "2.1.19"]
+    [ring               "1.3.2"]
+    [ring/ring-defaults "0.1.3"] ; Includes `ring-anti-forgery`
+    [fogus/ring-edn     "0.3.0"]
+    [compojure          "1.3.4"]
+    [enlive             "1.1.5"]])
 
 (def logging-deps
   '[[com.taoensso/timbre "4.0.2"]])
@@ -36,8 +37,8 @@
 (def auth-deps
   "Dealing with authentication and authorization."
   '[[buddy/buddy-hashers "0.4.2"]
-    [buddy/buddy-auth "0.5.3"]
-    [crypto-random "1.2.0"]])
+    [buddy/buddy-auth    "0.5.3"]
+    [crypto-random       "1.2.0"]])
 
 (def license
   "The point of unlicense is to increase the awareness that IP will not protect
