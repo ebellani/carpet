@@ -134,7 +134,7 @@
                          auth-deps
                          environment-deps
                          ui-deps)
-  :plugins plugins
+  :plugins ~plugins
   :source-paths ~(-> source-paths :app :clj)
   :cljsbuild {:builds {:app {:source-paths ~(-> source-paths :app :cljs)
                              :compiler ~cljsbuild-compiler-config}}}
