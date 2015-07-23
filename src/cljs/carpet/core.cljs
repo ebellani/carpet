@@ -1,8 +1,6 @@
 (ns carpet.core
   "Client side of the app. Dispatches to the correct om component based on the
   current component root name."
-  (:require-macros
-   [cljs.core.async.macros  :as asyncm :refer [go-loop]])
   (:require
    [reagent.core            :as reagent]
    [clojure.string          :as str]
