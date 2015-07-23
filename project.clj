@@ -69,11 +69,12 @@
   {:output-to            "resources/public/js/app.js"
    :output-dir           "resources/public/js/out"
    :main                 "carpet.main"
-   :asset-path           "js/out"
+   :asset-path           "/js/out"
    :source-map-timestamp true
    :optimizations        :none
    :source-map           true
-   :pretty-print         true})
+   :pretty-print         true
+   :verbose              true})
 
 ;;;;;;;;;;;;;;;;;
 ;; development ;;
@@ -150,8 +151,8 @@
                ;; used by the hot loader (figwheel)
                :hot-loading {:css-dirs     ~css-dirs
                              :source-paths
-                             ~(concat (-> source-paths :dev :cljs)
-                                      (-> source-paths :app :cljs))
+                             ~(concat (-> source-paths :app :cljs)
+                                      (-> source-paths :dev :cljs))
                              :cljsbuild-compiler-config
                              ~cljsbuild-compiler-config}}}
    :uberjar {:source-paths ["env/prod/clj"]

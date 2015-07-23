@@ -4,59 +4,42 @@ Web and mobile interface for a remmitance application.
 
 ## Development
 
-
 Open a terminal and type `lein repl` to start a Clojure REPL
-(interactive prompt).
-
-In the REPL, type
+(interactive prompt) already parked at the `carpet.server`
+namespace. In there, in order to start the server, run:
 
 ```clojure
 (run)
-(browser-repl)
 ```
 
-The call to `(run)` does two things, it starts the webserver at port
-10555, and also the Figwheel server which takes care of live reloading
-ClojureScript code and CSS. Give them some time to start.
+This does two things: it starts the webserver at port 10555, and also
+the Figwheel server which takes care of live reloading ClojureScript
+code and CSS. Give them some time to start.
 
-Running `(browser-repl)` starts the Weasel REPL server, and drops you
-into a ClojureScript REPL. Evaluating expressions here will only work
-once you've loaded the page, so the browser can connect to Weasel.
+If you want to have a repl into the CLJS dimension, then when the repl
+is in the `carpet.server` namespace, run:
 
-When you see the line `Successfully compiled "resources/public/app.js"
-in 21.36 seconds.`, you're ready to go. Browse to
-`http://localhost:10555` and enjoy.
-
-## Deploying to Heroku
-
-This assumes you have a
-[Heroku account](https://signup.heroku.com/dc), have installed the
-[Heroku toolbelt](https://toolbelt.heroku.com/), and have done a
-`heroku login` before.
-
-``` sh
-git init
-git add -A
-git commit
-heroku create
-git push heroku master:master
-heroku open
+```clojure
+(dev/browser-repl)
 ```
 
-## Running with Foreman
+This will start a Weasel REPL server, and replace the current REPL for
+a CLJS REPL. Evaluating expressions here will only work once you've
+loaded the page, so the browser can connect to Weasel. If the page is
+already loaded, a refresh is necessary so the client can connect to
+the Weasel server.
 
-Heroku uses [Foreman](http://ddollar.github.io/foreman/) to run your
-app, which uses the `Procfile` in your repository to figure out which
-server command to run. Heroku also compiles and runs your code with a
-Leiningen "production" profile, instead of "dev". To locally simulate
-what Heroku does you can do:
+In order to return to the CLJ dimension, you need to evaluate the
+:cljs/quit keyword in the CLJS REPL. Again, if you try to return to
+the CLJS REPL by the above instructions you will need to refresh the
+page.
 
-``` sh
-lein with-profile -dev,+production uberjar && foreman start
-```
+## Using the app with sample data
 
-Now your app is running at
-[http://localhost:5000](http://localhost:5000) in production mode.
+The hardcoded user has credentials: user name: mock, password: mock.
+In the `carpet.server` you can run the `start-btc-broadcaster!`
+command in order to see the `server>user` push mechanism in
+action. This will update the dashboard with some fake data.
 
 ## Chestnut
 
