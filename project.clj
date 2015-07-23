@@ -6,6 +6,12 @@
 ;; app  ;;
 ;;;;;;;;;;
 
+(def plugins
+  "The leiningen plugins that are necessary for this project to run stand
+  alone."
+  '[[lein-cljsbuild "1.0.6"]
+    [lein-environ   "1.0.0"]])
+
 (def language-deps
   "Languages used in the system"
   '[[org.clojure/clojure       "1.7.0-master-SNAPSHOT"] ;; <- conditional readers
@@ -128,6 +134,7 @@
                          auth-deps
                          environment-deps
                          ui-deps)
+  :plugins plugins
   :source-paths ~(-> source-paths :app :clj)
   :cljsbuild {:builds {:app {:source-paths ~(-> source-paths :app :cljs)
                              :compiler ~cljsbuild-compiler-config}}}
