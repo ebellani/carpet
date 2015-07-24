@@ -14,3 +14,4 @@ pom.xml.asc
 .lein-env
 resources/public/js/out/
 resources/public/js/app.js
+out/

@@ -1,10 +1,11 @@
 (ns carpet.dashboard
   "Provides components for dealing with the dashboard, which is the main user
   facing part of the application."
-  (:require [reagent.core     :refer [atom]]
-            [taoensso.encore  :as log :refer [format]]
-            [carpet.session   :as session]
-            [carpet.router    :refer [event-msg-handler]]))
+  (:require [reagent.core         :refer [atom]]
+            [taoensso.encore      :as log :refer [format]]
+            [carpet.session       :as session]
+            [carpet.notification  :as notification]
+            [carpet.router        :refer [application-msg-handler]]))
 
 ;;;;;;;;;;;;;;;;;;;;
 ;; state variable ;;
@@ -17,9 +18,9 @@
 ;; custom events  ;;
 ;;;;;;;;;;;;;;;;;;;;
 
-(defmethod event-msg-handler :currency/broadcast
-  [{:as ev-msg :keys [?data]}]
-  (swap! quotes #(conj % ?data)))
+(defmethod application-msg-handler :currency/broadcast
+  [{:keys [data]}]
+  (swap! quotes #(conj % data)))
 
 ;;;;;;;;;;;;;;;;
 ;; components ;;
@@ -65,7 +66,7 @@
       [:li [:a {:href "#"} "Settings"]]
       [:li [:a {:href "#"} "Profile"]]
       [:li [:a {:href "#"
-                :on-click session/logout!} "Logout"]]]
+                :on-click session/try-logout!} "Logout"]]]
      [:form {:class "navbar-form navbar-right"}
       [:input {:type "text" :class "form-control" :placeholder "Search..."}]]]]])
 
@@ -74,5 +75,6 @@
   http://getbootstrap.com/examples/dashboard/ "
   []
   [:div {:class "dashboard"}
+   [notification/main]
    [navigation-bar]
    [body]])

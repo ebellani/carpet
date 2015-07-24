@@ -12,15 +12,9 @@
 ;; root msg handlers  ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmulti event-msg-handler :id) ; Dispatch on event-id
+(defmulti event-msg-handler :id)
 
-(defn event-msg-handler-wrapper [{:as ev-msg :keys [id ?data event]}]
-  "Wrapper of the event-msg-handler, emulating something like CLOS :around method combination[1].
-[1] http://www.aiai.ed.ac.uk/~jeff/clos-guide.html#meth-comb"
-  (debugf "Event: %s" event)
-  (event-msg-handler ev-msg))
-
-(defmethod event-msg-handler :default ; Fallback
+(defmethod event-msg-handler :default
   #?@(:clj
       [[{:as ev-msg :keys [event id ?data ring-req ?reply-fn send-fn]}]
        (let [session (:session ring-req)
@@ -31,6 +25,20 @@
       :cljs
       [[{:as ev-msg :keys [event]}]
        (debugf "Unhandled event: %s" event)]))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; application message handlers  ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; these are used in order to separate handling messages that are
+;; related to establishing the channels (events) from handling the
+;; messages that come through these channels
+
+(defmulti application-msg-handler :id)
+
+(defmethod application-msg-handler :default
+  [{:keys [id data]}]
+  (debugf "Unhandled application message: %s" id))
 
 ;;;;;;;;;;;;;;;
 ;; interface ;;
@@ -46,5 +54,4 @@
   []
   (stop-router!)
   (reset! router_
-          (sente/start-chsk-router! comm/receiver
-                                    event-msg-handler-wrapper)))
+          (sente/start-chsk-router! comm/receiver event-msg-handler)))
