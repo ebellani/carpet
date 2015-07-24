@@ -6,7 +6,7 @@
    [ring.middleware.edn             :refer [wrap-edn-params]]
    [buddy.auth.middleware           :refer [wrap-authentication]]
    [taoensso.sente                  :as sente]
-   [compojure.core                  :refer [POST GET defroutes]]
+   [compojure.core                  :refer [POST GET PUT defroutes]]
    [compojure.route                 :as route]
    [clojure.core.async              :as async :refer [<! go-loop]]
    [taoensso.timbre                 :as log]
@@ -48,18 +48,25 @@
   [request]
   (let [{:keys [session params]} request
         {:keys [user-name]}      params]
-    (log/info (format "'%s' attempting login" user-name))
-    (log/infof "session %s request %s" session request)
+    (log/infof "'%s' attempting login" user-name)
     (if-let [token (auth/login user-name
                                (get-in request [:params :password]))]
       (assoc (req/ok {:message (log&return :info
                                            (format "'%s' login success"
                                                    user-name))})
-             :session (assoc session :uid (:token token)))
+             :session (assoc session :uid user-name))
       (req/denied {:message
                    (log&return :info
                                (format "'%s' login failure"
                                        user-name))}))))
+
+(defn logout
+  [request]
+  (let [session (:session request)
+        uid     (:uid session)]
+    (assoc (req/ok
+            {:message (log&return :info (format "'%s' logout" uid))})
+           :session (dissoc session :uid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; routes and middleware ;;
@@ -70,7 +77,8 @@
 
 (defroutes routes
   (GET  "/" req (root-template))
-  (POST comm/login-path req (login req))
+  (POST comm/session-path req (login  req))
+  (PUT  comm/session-path req (logout req))
   ;;
   (GET comm/communication-path req
     (comm/ring-ajax-get-or-ws-handshake req))
@@ -99,11 +107,24 @@
              (wrap-authentication auth/backend)
              wrap-edn-params))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Server-side channel-connected methods ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; basic sente server side events ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Add your (defmethod event-msg-handler <event-id> [ev-msg] <body>)s here...
+(defmethod event-msg-handler :chsk/ws-ping
+  [_]
+  ;; nothing for now, just here to avoid polluting the logs.
+  )
+
+(defmethod event-msg-handler :chsk/uidport-open
+  [{:as ev-msg :keys [?data]}]
+  (let [[?uid] ?data]
+    (log/debugf "Port open for: %s" ?uid)))
+
+(defmethod event-msg-handler :chsk/uidport-close
+  [{:as ev-msg :keys [?data]}]
+  (let [[?uid] ?data]
+    (log/debugf "Port close for: %s" ?uid)))
 
 ;;;;;;;;;;;;;;;;;;;
 ;; channel loops ;;

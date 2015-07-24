@@ -32,27 +32,31 @@
   also asks the channel socket to reconnect on success, thereby picking up the
   new session."
   [user-name password]
-  (log/debugf "Sending auth data for user: %s" user-name)
   (sente/ajax-call
-   comm/login-path
+   comm/session-path
    {:method :post
     :params {:user-name user-name
              :password  password
              :csrf-token (:csrf-token @comm/status)}}
-   (fn [resp-map]
-     (let [{:keys [success? ?status ?error ?content ?content-type]}
-           resp-map]
-       (log/debugf "resp-map %s" resp-map)
+   (fn [resp]
+     (let [{:keys [success? ?content]} resp]
        (reset! token (if success?
-                       (do
-                         (sente/chsk-reconnect! comm/connection)
-                         (:token ?content))
+                       (do (sente/chsk-reconnect! comm/connection)
+                           (:token ?content))
                        false))
        (noty/add! (if success? "success" "danger")
                   (:message ?content))))))
 
-(defn logout!
+(defn try-logout!
   "Actually communicates user termination to the server."
   []
-  ;; TODO...
-  (reset! token false))
+  (reset! token false)
+  (sente/ajax-call
+   comm/session-path
+   {:method :put
+    :params {:csrf-token (:csrf-token @comm/status)}}
+   (fn [resp]
+     (let [{:keys [success? ?content]} resp]
+       (when success? (sente/chsk-reconnect! comm/connection))
+       (noty/add! (if success? "success" "danger")
+                  (:message ?content))))))

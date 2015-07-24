@@ -29,7 +29,7 @@
   [1] https://en.wikipedia.org/wiki/Cross-site_request_forgery"
   :csrf-token)
 
-(def login-path
+(def session-path
   "The path where the login functionality will take place."
   "/login")
 
