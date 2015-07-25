@@ -5,7 +5,7 @@
             [taoensso.encore      :as log :refer [format]]
             [carpet.session       :as session]
             [carpet.notification  :as notification]
-            [carpet.router        :refer [application-msg-handler]]))
+            [carpet.router        :refer [message-handler]]))
 
 ;;;;;;;;;;;;;;;;;;;;
 ;; state variable ;;
@@ -14,13 +14,13 @@
 (defonce quotes
   (atom '()))
 
-;;;;;;;;;;;;;;;;;;;;
-;; custom events  ;;
-;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;; custom handlers ;;
+;;;;;;;;;;;;;;;;;;;;;
 
-(defmethod application-msg-handler :currency/broadcast
-  [{:keys [data]}]
-  (swap! quotes #(conj % data)))
+(defmethod message-handler :currency/broadcast
+  [{:keys [?data]}]
+  (swap! quotes #(conj % ?data)))
 
 ;;;;;;;;;;;;;;;;
 ;; components ;;
@@ -28,7 +28,10 @@
 
 (defn- user
   []
-  (let [{:keys [from to quantity]} (first @quotes)]
+  (let [{:keys [from to quantity]
+         :or   {from     :btc
+                to       :usd
+                quantity "Loading..."}} (first @quotes)]
     [:div {:class "col-sm-9 col-md-10 main"}
      [:h1 {:class "page-header"} "Dashboard"]
      [:div {:class "row placeholders"}
