@@ -7,7 +7,8 @@
             [taoensso.sente        :as sente]
             [taoensso.encore       :as log]
             [carpet.notification   :as noty]
-            [carpet.communication  :as comm]))
+            [carpet.communication  :as comm]
+            [carpet.router         :refer [message-handler]]))
 
 ;;;;;;;;;;;;;;;;;;;;
 ;; state variable ;;
@@ -17,6 +18,14 @@
   ;; JWS token for maintaining session state without server side
   ;; storage.
   (atom false))
+
+;;;;;;;;;;;;;;;;;;;;;
+;; custom handlers ;;
+;;;;;;;;;;;;;;;;;;;;;
+
+(defmethod message-handler :session/destroy
+  []
+  (reset! token false))
 
 ;;;;;;;;;;;;;;;
 ;; operators ;;

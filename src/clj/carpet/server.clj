@@ -16,7 +16,7 @@
    [net.cgrand.enlive-html          :as html :refer [deftemplate]]
    [net.cgrand.reload               :refer [auto-reload]]
    [environ.core                    :refer [env]]
-   [carpet.router                   :as router :refer [event-msg-handler]]
+   [carpet.router                   :as router :refer [message-handler]]
    [carpet.communication            :as comm]
    [carpet.auth                     :as auth]
    [carpet.request                  :as req]
@@ -35,16 +35,17 @@
 ;;;;;;;;;;;;
 
 (log/merge-config!
-  {:appenders {:spit (spit-appender {:fname "log/server.log"})}})
+  {:appenders {:spit (spit-appender {:fname (:log-file-name env)})}})
 
 ;;;;;;;;;;;;;;
 ;; handlers ;;
 ;;;;;;;;;;;;;;
 
 (defn login
-  "Used to authenticate the user and also to identify it for the channel's
-  loops. See:
-  https://github.com/ptaoussanis/sente/issues/118#issuecomment-87378277"
+  "Used to authenticate an user and to create an associated uid. This uid will
+  be used to send messages through the channels. See
+  https://github.com/ptaoussanis/sente/issues/118#issuecomment-87378277 for some
+  insight into logging with sente."
   [request]
   (let [{:keys [session params]} request
         {:keys [user-name]}      params]
@@ -64,6 +65,7 @@
   [request]
   (let [session (:session request)
         uid     (:uid session)]
+    (comm/send! uid [:session/destroy])  ; <- logs out of all sessions.
     (assoc (req/ok
             {:message (log&return :info (format "'%s' logout" uid))})
            :session (dissoc session :uid))))
@@ -111,17 +113,17 @@
 ;; basic sente server side events ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmethod event-msg-handler :chsk/ws-ping
+(defmethod message-handler :chsk/ws-ping
   [_]
   ;; nothing for now, just here to avoid polluting the logs.
   )
 
-(defmethod event-msg-handler :chsk/uidport-open
+(defmethod message-handler :chsk/uidport-open
   [{:as ev-msg :keys [?data]}]
   (let [[?uid] ?data]
     (log/debugf "Port open for: %s" ?uid)))
 
-(defmethod event-msg-handler :chsk/uidport-close
+(defmethod message-handler :chsk/uidport-close
   [{:as ev-msg :keys [?data]}]
   (let [[?uid] ?data]
     (log/debugf "Port close for: %s" ?uid)))
@@ -139,11 +141,11 @@
     (doseq [uid (filter (fn [uid]
                           (not= uid ::sente/nil-uid))
                         (:any @comm/connected-uids))]
-      (comm/sender! uid
-                    [:currency/broadcast
-                     {:from :btc
-                      :to   :usd
-                      :quantity (rand 100)}]))
+      (comm/send! uid
+                  [:currency/broadcast
+                   {:from :btc
+                    :to   :usd
+                    :quantity (rand 100)}]))
     (recur (inc i))))
 
 ;;;;;;;;;;

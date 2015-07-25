@@ -21,7 +21,7 @@
   "Used to build communication channels both inter and intra the client<->server
   barrier."
   '[[org.clojure/core.async    "0.1.346.0-17112a-alpha"]
-    [com.taoensso/sente        "1.5.0"]
+    [com.taoensso/sente        "1.6.0-RC1"]
     ;; Transit deps used to aid perf. of larger data payloads
     ;; (see reference example for details):
     ;; http://blog.cognitect.com/blog/2014/7/22/transit
@@ -153,6 +153,7 @@
                         :nrepl-middleware
                         [cemerick.piggieback/wrap-cljs-repl]}
          :env {:is-dev true
+               :log-file-name "log/server.log"
                ;; used in generating the tokens
                :secret "mysupersecret"
                ;; used by the hot loader (figwheel)

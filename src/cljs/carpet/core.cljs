@@ -7,8 +7,7 @@
    [cljs.core.async         :as async   :refer [timeout]]
    [taoensso.encore         :as log]
    [taoensso.sente          :as sente   :refer [cb-success?]]
-   [carpet.router           :as router  :refer [event-msg-handler
-                                                application-msg-handler]]
+   [carpet.router           :as router  :refer [message-handler]]
    [carpet.communication    :as comm]
    [carpet.login            :as login]
    [carpet.dashboard        :as dashboard]
@@ -20,23 +19,16 @@
 ;; basic sente client side events ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmethod event-msg-handler :chsk/state
+(defmethod message-handler :chsk/state
   ;; Indicates when Sente is ready client-side.
-  [{:as ev-msg :keys [?data]}]
+  [{:keys [?data]}]
   (if (= ?data {:first-open? true})
     (log/debugf "Channel socket successfully established!")
     (log/debugf "Channel socket state change: %s" ?data)))
 
-(defmethod event-msg-handler :chsk/recv
-  ;; default custom push event
-  [{:as ev-msg :keys [?data]}]
-  (let [[message-type message-payload] ?data]
-    (application-msg-handler {:id  message-type
-                              :data message-payload})))
-
-(defmethod event-msg-handler :chsk/handshake
+(defmethod message-handler :chsk/handshake
   ;; handshake for WS
-  [{:as ev-msg :keys [?data]}]
+  [{:keys [?data]}]
   (let [[?uid] ?data]
     (log/debugf "Handshake done for: %s" ?uid)))
 

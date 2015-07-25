@@ -53,10 +53,11 @@
          :cljs
          (sente/make-channel-socket! communication-path
                                      (merge packer-payload
-                                            {:type :auto})))]
+                                            {:type :auto
+                                             :wrap-recv-evs? false})))]
   ;; common API for both languages
-  (defonce receiver  ch-recv)
-  (defonce sender!   send-fn)
+  (defonce receive  ch-recv)
+  (defonce send!    send-fn)
   #?@(:clj
       [(defonce connected-uids connected-uids)
        (defonce ring-ajax-post ajax-post-fn)
