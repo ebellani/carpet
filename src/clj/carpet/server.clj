@@ -20,7 +20,8 @@
    [carpet.communication            :as comm]
    [carpet.auth                     :as auth]
    [carpet.request                  :as req]
-   [carpet.dev                      :as dev]))
+   [carpet.dev                      :as dev])
+  (:gen-class))
 
 ;;;;;;;;;;;
 ;; utils ;;

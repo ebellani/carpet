@@ -136,6 +136,8 @@
                          ui-deps)
   :plugins ~plugins
   :source-paths ~(-> source-paths :app :clj)
+  ;; Namespace with -main function called with 'lein run'.
+  :main carpet.server
   :cljsbuild {:builds {:app {:source-paths ~(-> source-paths :app :cljs)
                              :compiler ~cljsbuild-compiler-config}}}
   :profiles
