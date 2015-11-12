@@ -35,7 +35,8 @@
     [ring/ring-defaults "0.1.3"] ; Includes `ring-anti-forgery`
     [fogus/ring-edn     "0.3.0"]
     [compojure          "1.3.4"]
-    [enlive             "1.1.5"]])
+    [enlive             "1.1.5"]
+    [ring-ttl-session "0.3.0"]])
 
 (def logging-deps
   '[[com.taoensso/timbre "4.0.2"]])

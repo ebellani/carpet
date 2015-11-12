@@ -4,6 +4,7 @@
   (:require
    [ring.middleware.defaults        :refer [wrap-defaults site-defaults]]
    [ring.middleware.edn             :refer [wrap-edn-params]]
+   [ring-ttl-session.core           :refer [ttl-memory-store]]
    [buddy.auth.middleware           :refer [wrap-authentication]]
    [taoensso.sente                  :as sente]
    [compojure.core                  :refer [POST GET PUT defroutes]]
@@ -92,20 +93,31 @@
 
 ;; see https://github.com/funcool/buddy-auth/blob/master/examples/token-jws/src/authexample/web.clj
 
-(def csrf-modified-defaults
-  "Adds an acessor that takes into consideration the custom csrf toke name for
-  channel/websocket communication."
+(def session-store
+  "In-memory session store with time-to-live keys (30 minutes).
+  References:
+  * https://github.com/ring-clojure/ring/wiki/Sessions
+  * https://github.com/boechat107/ring-ttl-session"
+  (ttl-memory-store (* 60 30)))
+
+(def modified-site-defaults
+  "Modifications to site-defaults:
+  * Adds an acessor that takes into consideration the custom csrf toke name for
+  channel/websocket communication.
+  * Replaces the default in-memory session store by a memory-based TTL session 
+  store."
   (let [ring-defaults-config
-        (assoc-in site-defaults
-                  [:security :anti-forgery]
-                  {:read-token (fn [req]
-                                 (-> req :params comm/csrf-token-name))})]
+        (-> site-defaults
+            (assoc-in [:security :anti-forgery]
+                      {:read-token (fn [req]
+                                     (-> req :params comm/csrf-token-name))})
+            (assoc-in [:session :store] session-store))]
     ;; NB: Sente requires the Ring `wrap-params` + `wrap-keyword-params`
     ;; middleware to work. These are included with
     ;; `ring.middleware.defaults/wrap-defaults`
     (wrap-defaults routes ring-defaults-config)))
 
-(def app (-> csrf-modified-defaults
+(def app (-> modified-site-defaults
              (wrap-authentication auth/backend)
              wrap-edn-params))
 
