@@ -124,8 +124,8 @@
 ;; definition ;;
 ;;;;;;;;;;;;;;;;
 
-(defproject carpet "0.0.3" ; For version semantics, see http://semver.org/
-  :description "Web and mobile interface for a remmitance application."
+(defproject carpet "0.0.1" ; For version semantics, see http://semver.org/
+  :description "Web and mobile interface using a single source style."
   :license     ~license
   :dependencies ~(concat language-deps
                          channel-deps

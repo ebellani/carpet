@@ -1,6 +1,6 @@
 # carpet
 
-Web and mobile interface for a remmitance application.
+Web and mobile interface using a single source style.
 
 ## Development
 
